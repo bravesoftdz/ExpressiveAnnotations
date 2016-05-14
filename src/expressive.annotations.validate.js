@@ -14,6 +14,7 @@ var
         settings: {
             debug: false, // output debug messages to the web console (should be disabled for release code)
             dependencyTriggers: 'change keyup', // a string containing one or more DOM field event types (such as "change", "keyup" or custom event names) for which fields directly dependent on referenced DOM field are validated
+            hideNonRequiredFields: false, // hide fields that do not pass the RequiredIf test
 
             apply: function(options) { // alternative way of settings setup (recommended), crucial to invoke e.g. for new set of dependency triggers to be re-bound
                 function verifySetup() {
@@ -493,6 +494,9 @@ var
         },
         extractValue: function(form, name, prefix, type, parser) {
             function getValue(element) {
+                // If we're hiding non-required fields, treat hidden fields as having no value
+                if (api.settings.hideNonRequiredFields && !element.is(':visible')) return null;
+
                 var elementType = element.attr('type');
                 switch (elementType) {
                     case 'checkbox':
@@ -617,6 +621,10 @@ var
                     field = $(form).find(typeHelper.string.format(':input[data-val][name="{0}"]', referencedFields[i])).not(validator.settings.ignore);
                     if (field.length !== 0) {
                         field.valid();
+
+                        // If we're hiding non-required fields, also validate the references for each referenced field
+                        // TODO Need to prevent infinite recursion that could be caused by fields referencing each other
+                        if (api.settings.hideNonRequiredFields) validationHelper.validateReferences(field.attr('name'), form);
                     }
                 }
             } else {
@@ -691,15 +699,19 @@ var
         return true;
     },
 
-    computeRequiredIf = function(value, element, params) {
+    computeRequiredIf = function(value, element, params, ctxEvalResult) {
         value = modelHelper.adjustGivenValue(value, element, params);
         if(value === undefined || value === null || value === '' // check if the field value is not set (undefined, null or empty string treated at client as null at server)
             || (!/\S/.test(value) && !params.allowEmpty)) {
-            var model = modelHelper.deserializeObject(params.form, params.fieldsMap, params.constsMap, params.parsersMap, params.prefix);
-            toolchain.registerMethods(model);
-            logger.dump(typeHelper.string.format('RequiredIf expression of {0} field:\n{1}\nwill be executed within following context (methods hidden):\n{2}', element.name, params.expression, model));
-            if (modelHelper.ctxEval(params.expression, model)) { // check if the requirement condition is satisfied
-                return false; // requirement confirmed => notify
+            if (ctxEvalResult === null) {
+                var model = modelHelper.deserializeObject(params.form, params.fieldsMap, params.constsMap, params.parsersMap, params.prefix);
+                toolchain.registerMethods(model);
+                logger.dump(typeHelper.string.format('RequiredIf expression of {0} field:\n{1}\nwill be executed within following context (methods hidden):\n{2}', element.name, params.expression, model));
+                if (modelHelper.ctxEval(params.expression, model)) { // check if the requirement condition is satisfied
+                    return false; // requirement confirmed => notify
+                }
+            } else if (ctxEvalResult === true) {
+                return false; // requirement previously confirmed => notify
             }
         }
         return true;
@@ -738,9 +750,15 @@ var
         var method = typeHelper.string.format('requiredif{0}', $.trim(this));
         $.validator.addMethod(method, function(value, element, params) {
             try {
-                var valid = computeRequiredIf(value, element, params);
-                $(element).trigger('eavalid', ['requiredif', valid, params.expression]);
-                return valid;
+                var ctxEvalResult = null;
+                if (api.settings.hideNonRequiredFields) {
+                    var model = modelHelper.deserializeObject(params.form, params.fieldsMap, params.constsMap, params.parsersMap, params.prefix);
+                    toolchain.registerMethods(model);
+                    logger.dump(typeHelper.string.format('RequiredIf expression of {0} field:\n{1}\nwill be executed within following context (methods hidden):\n{2}', element.name, params.expression, model));
+                    ctxEvalResult = (modelHelper.ctxEval(params.expression, model)); // check if the requirement condition is satisfied
+                    $(element).trigger('eadisplay', ['requiredif', ctxEvalResult, params.expression]);
+                }
+                return computeRequiredIf(value, element, params, ctxEvalResult);
             } catch (ex) {
                 logger.fail(ex);
             }

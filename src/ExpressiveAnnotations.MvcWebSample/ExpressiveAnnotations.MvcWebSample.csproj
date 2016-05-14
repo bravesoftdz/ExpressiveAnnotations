@@ -141,6 +141,7 @@
     <Compile Include="Misc\TriggersManager.cs" />
     <Compile Include="Misc\ValidationManager.cs" />
     <Compile Include="Misc\CultureManager.cs" />
+    <Compile Include="Models\HideNonRequiredModel.cs" />
     <Compile Include="Models\Address.cs" />
     <Compile Include="Models\Contact.cs" />
     <Compile Include="Models\Query.cs" />
@@ -293,6 +294,9 @@
       <Project>{70dd327b-f37c-4291-9388-212aa541e970}</Project>
       <Name>ExpressiveAnnotations</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Views\Home\HideNonRequiredTest.cshtml" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

@@ -1,0 +1,98 @@
+﻿@using System.Threading
+@using ExpressiveAnnotations.MvcWebSample.Misc
+@using MvcCheckBoxList.Model
+@model ExpressiveAnnotations.MvcWebSample.Models.HideNonRequiredModel
+
+<div class="box">
+    <div class="left-corner">
+        <h1>ExpressiveAnnotations - annotation-based conditional validation</h1>
+    </div>
+    <div class="right-corner">
+        <a href="https://github.com/jwaliszko/ExpressiveAnnotations">[more on github]</a>
+    </div>
+</div>
+
+@using (Html.BeginForm("HideNonRequiredTest", "Home", FormMethod.Post, new {id = "mainform"}))
+{
+    @Html.AntiForgeryToken()
+    @Html.ValidationSummary(true) @*show/hide validation summary block*@
+
+    <div class="message-success">@(ViewBag.Success ?? Html.Raw("&nbsp;"))</div>
+
+    <fieldset>
+        <legend>Usage sample for model validation in ASP.NET MVC</legend>
+        
+        <div class="ea-wrapper">
+            @Html.LabelFor(model => model.Question1, new { @class = "inline prefix" })
+            @Html.CheckBoxListFor(model => model.Question1, model => model.Question1Options, item => item.Value, item => item.Text, model => model.Question1Selections, Position.Horizontal, model => new { @class = "inline" })
+            @Html.ValidationMessageFor(model => model.Question1)
+        </div>
+
+        <div class="ea-wrapper">
+            @Html.LabelFor(model => model.Question2, new { @class = "inline prefix" })
+            @Html.ListBoxFor(model => model.Question2, Model.Question2Options)
+            @Html.ValidationMessageFor(model => model.Question2)
+        </div>
+
+        <div class="ea-wrapper">
+            @Html.LabelFor(model => model.Question3, new { @class = "inline prefix" })
+            @Html.TextAreaFor(model => model.Question3)
+            @Html.ValidationMessageFor(model => model.Question3)
+        </div>
+    </fieldset>
+}
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+    @Scripts.Render("~/bundles/expressive") // load expressive.annotations.validate.js
+
+    <script>
+        // var expann = ea.noConflict(); // in case of naming collision, return control of the ea variable back to its origins (old references of ea are saved during ExpressiveAnnotations initialization; noConflict() restores them)
+        // expann.addMethod... // do something with ExpressiveAnnotations
+        // ea... // do something with original ea variable
+
+        // ----- define your settings -----
+
+        ea.settings.apply({
+            debug: true,
+            dependencyTriggers: 'change', // if not explicitly provided, default setup is: 'change keyup'
+            hideNonRequiredFields: true
+        });
+
+        // ----- define your parsers -----
+
+        // Parses checkboxes/select lists into integer array
+        ea.addValueParser('int32[]', function(value, field) { // provide your custom parsing mechanism of the field value at client side
+            // parameters: value - raw data string extracted by default from DOM element
+            //             field - DOM element name for which parser was invoked
+            return $(':input[name="' + field + '"]:checked, :input[name="' + field + '"] option:selected').map(function () {
+                return parseInt(this.value, 10);
+            }).get();
+        });
+
+        // ----- define your methods -----
+
+        ea.addMethod('ArrayContains', function(value, array) {
+            return $.inArray(value, array) >= 0;
+        });
+
+        // ----- do some other stuff, not necessarily related to ea directly -----
+
+        $(document).ready(function() {
+            var $form = $('form');
+            $form.validate().settings.ignore = ''; // enable validation for ':hidden' fields
+
+            // Handle eadisplay event, which tells us to show/hide fields
+            $form.find('input, select, textarea').on('eadisplay', function (e, type, display, expr) {
+                if (type === 'requiredif') {
+                    $(e.currentTarget).closest('div.ea-wrapper').toggle(display);
+                }
+            });
+
+            // Validate all fields at startup so dependent fields are hidden by default
+            $form.find('input, select, textarea').each(function () {
+                $(this).valid();
+            });
+        });
+    </script>
+}

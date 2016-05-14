@@ -55,5 +55,9 @@ namespace ExpressiveAnnotations.MvcWebSample.Controllers
                 return await client.PostAsync("api/Default/Save", model, new JsonMediaTypeFormatter());                
             }
         }
+
+        public ActionResult HideNonRequiredTest() {
+            return View(new HideNonRequiredModel());
+        }
     }
 }
