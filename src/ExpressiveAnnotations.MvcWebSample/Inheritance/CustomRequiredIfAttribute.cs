@@ -17,8 +17,10 @@ namespace ExpressiveAnnotations.MvcWebSample.Inheritance
 
         protected override ValidationResult IsValidInternal(object value, ValidationContext validationContext)
         {
-            var isEmpty = value is string && string.IsNullOrWhiteSpace((string)value);
-            if (value == null || (isEmpty && !AllowEmptyStrings))
+            if ((PropertyType != null) && (PropertyType.Name == "String") && AllowEmptyStrings) {
+                return ValidationResult.Success;
+            } 
+            else if (value == null) 
             {
                 Compile(validationContext.ObjectType);
                 if (CachedValidationFuncs[validationContext.ObjectType](validationContext.ObjectInstance)) // check if the requirement condition is satisfied

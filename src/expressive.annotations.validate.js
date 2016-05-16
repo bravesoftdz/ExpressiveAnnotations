@@ -701,8 +701,9 @@ var
 
     computeRequiredIf = function(value, element, params, ctxEvalResult) {
         value = modelHelper.adjustGivenValue(value, element, params);
-        if(value === undefined || value === null || value === '' // check if the field value is not set (undefined, null or empty string treated at client as null at server)
-            || (!/\S/.test(value) && !params.allowEmpty)) {
+        if ((typeof value === 'string') && params.allowEmpty) {
+            return true;
+        } else if (value === undefined || value === null || value === '') { // check if the field value is not set (undefined, null or empty string treated at client as null at server)
             if (ctxEvalResult === null) {
                 var model = modelHelper.deserializeObject(params.form, params.fieldsMap, params.constsMap, params.parsersMap, params.prefix);
                 toolchain.registerMethods(model);
