@@ -13,14 +13,14 @@ namespace ExpressiveAnnotations.Attributes
     /// </summary>
     public sealed class RequiredIfAttribute : ExpressiveAttribute
     {
-        private const string _defaultErrorMessage = "The {0} field is required by the following logic: {1}";
+        public static string DefaultErrorMessage = "The {0} field is required by the following logic: {1}";
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="RequiredIfAttribute" /> class.
         /// </summary>
         /// <param name="expression">The logical expression based on which requirement condition is computed.</param>
         public RequiredIfAttribute(string expression)
-            : base(expression, _defaultErrorMessage)
+            : base(expression, DefaultErrorMessage)
         {
             AllowEmptyStrings = false;
         }
